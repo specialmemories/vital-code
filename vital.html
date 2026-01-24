@@ -1,0 +1,275 @@
+<!------------------------------------ YOUTUBE CDODE  ------------------------------------>
+<script>
+  (function () {
+    const CONFIG = {
+        scaleStep: 0.1,
+        translateStep: 1,
+        minScale: 1,
+        maxScale: 4
+    };
+
+    const INITIAL_STATE = {
+        scale: 1.5,
+        x: 0,
+        y: 0
+    };
+
+    const state = {
+        scale: INITIAL_STATE.scale,
+        x: INITIAL_STATE.x,
+        y: INITIAL_STATE.y
+    };
+
+    let zoomLabel;
+
+    function injectCSS() {
+        if (document.getElementById("custom-no-scroll-css")) return;
+
+        const style = document.createElement("style");
+        style.id = "custom-no-scroll-css";
+        style.textContent = `
+            .no-scroll button.branding-img-container.ytp-button,
+            .no-scroll .ytp-cards-teaser-text {
+                display: none !important;
+            }
+
+            .ytp-spinner {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function getVideo() {
+        return document.querySelector(".no-scroll video");
+    }
+
+    function applyTransform() {
+        const video = getVideo();
+        if (!video) return;
+
+        video.style.transform =
+            `scale(${state.scale}) translate(${state.x}%, ${state.y}%)`;
+    }
+
+    function clamp(val, min, max) {
+        return Math.min(Math.max(val, min), max);
+    }
+
+    function setPlaybackRate(rate) {
+        const video = getVideo();
+        if (!video) return;
+        video.playbackRate = rate;
+    }
+
+    function createButton(label, onClick) {
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.style.cssText = `
+            font-size: 12px;
+            padding: 2px 6px;
+            margin-right: 4px;
+            cursor: pointer;
+        `;
+        btn.addEventListener("click", onClick);
+        return btn;
+    }
+
+    function createZoomLabel() {
+        const div = document.createElement("div");
+        div.style.cssText = `
+            font-size: 12px;
+            padding: 2px 6px;
+            margin-right: 4px;
+            min-width: 32px;
+            text-align: center;
+            user-select: none;
+        `;
+        div.textContent = state.scale.toFixed(1) + "×";
+        return div;
+    }
+
+    function updateZoomLabel() {
+        if (zoomLabel) {
+            zoomLabel.textContent = state.scale.toFixed(1) + "×";
+        }
+    }
+
+    function resetTransform() {
+        state.scale = INITIAL_STATE.scale;
+        state.x = INITIAL_STATE.x;
+        state.y = INITIAL_STATE.y;
+
+        applyTransform();
+        updateZoomLabel();
+
+        setPlaybackRate(0.5);
+    }
+
+    function injectControls() {
+        const controls = document.querySelector(
+            ".ytp-chrome-controls .ytp-left-controls"
+        );
+        if (!controls) return false;
+
+        if (controls.querySelector(".custom-video-transform-controls")) {
+            return true;
+        }
+
+        const container = document.createElement("div");
+        container.className = "custom-video-transform-controls";
+        container.style.display = "flex";
+        container.style.alignItems = "center";
+
+        container.append(
+            createButton("Zoom +", () => {
+                state.scale = clamp(
+                    state.scale + CONFIG.scaleStep,
+                    CONFIG.minScale,
+                    CONFIG.maxScale
+                );
+                applyTransform();
+                updateZoomLabel();
+            }),
+            (zoomLabel = createZoomLabel()),
+            createButton("Zoom -", () => {
+                state.scale = clamp(
+                    state.scale - CONFIG.scaleStep,
+                    CONFIG.minScale,
+                    CONFIG.maxScale
+                );
+                applyTransform();
+                updateZoomLabel();
+            }),
+            createButton("⇐", () => {
+                state.x += CONFIG.translateStep;
+                applyTransform();
+            }),
+            createButton("⇒", () => {
+                state.x -= CONFIG.translateStep;
+                applyTransform();
+            }),
+            createButton("⇑", () => {
+                state.y += CONFIG.translateStep;
+                applyTransform();
+            }),
+            createButton("⇓", () => {
+                state.y -= CONFIG.translateStep;
+                applyTransform();
+            }),
+            createButton("0.1×", () => {
+                setPlaybackRate(0.1);
+            }),
+            createButton("Reset", resetTransform)
+        );
+
+        controls.appendChild(container);
+        return true;
+    }
+
+    const observer = new MutationObserver(() => {
+        injectCSS();
+        if (injectControls()) {
+            applyTransform();
+        }
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+})();
+
+</script>
+
+
+<!------------------------------------ YOUTUBE CDODE END  ------------------------------------>
+
+
+
+<!------------------------------------ INSTAGRAM CDODE   ------------------------------------>
+
+<style>
+  html[lang] {
+  overflow: auto !important;
+}
+
+/* Hide second child div inside .html-div within article */
+article > .html-div > div:nth-child(2) {
+  display: none;
+}
+
+/* Hide all dialogs by default */
+div[role="dialog"] {
+  display: none !important;
+}
+
+/* Darken background for elements containing a dialog */
+div:has(div[role="dialog"]) {
+  background: #000 !important;
+}
+
+/* Show dialogs that contain an article */
+div[role="dialog"]:has(article) {
+  display: flex !important;
+}
+
+/* Style video inside dialog */
+div[role="dialog"] article video {
+    position: fixed;
+    top: -50vh !important;
+    top: 0vh !important;
+    left: 50%;
+    height: 200vh !important;
+    height: 100vh !important;
+    background: #000;
+    transform: translateX(-50%);
+    object-fit: cover;
+    object-fit: contain;
+} 
+
+/* Remove all box shadows inside dialog */
+div[role="dialog"] * {
+  box-shadow: unset !important;
+}
+
+/* Hide tags and play buttons */
+button:has(svg[aria-label="Tags"]),
+div[role="dialog"] div[aria-label="Play"] {
+  display: none;
+}
+
+/* Audio playing & close buttons (hidden by default) */
+button:has(svg[aria-label="Audio is playing"]),
+svg[aria-label="Close"] {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Show on hover */
+button:has(svg[aria-label="Audio is playing"]):hover,
+svg[aria-label="Close"]:hover {
+  opacity: 1;
+}
+
+/* Navigation buttons */
+button:has(svg[aria-label="Next"]),
+button:has(svg[aria-label="Go back"]) {
+  background: #000;
+  transition: background 0.3s;
+}
+
+/* Navigation icons */
+svg[aria-label="Next"],
+svg[aria-label="Go back"] {
+  color: #000;
+}
+
+/* Invert colors on hover */
+button:has(svg[aria-label="Next"]):hover,
+button:has(svg[aria-label="Go back"]):hover {
+  background: #fff;
+}
+
+</style>
+<!------------------------------------ INSTAGRAM CODE END  ------------------------------------>
