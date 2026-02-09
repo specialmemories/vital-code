@@ -275,18 +275,27 @@ button:has(svg[aria-label="Go back"]):hover {
   document.head.appendChild(style);
 
   /* =======================
+     State
+  ======================= */
+  const videoState = {
+    top: 0,
+    height: 100
+  };
+
+  /* =======================
      Helpers
   ======================= */
   function getVideo() {
     return document.querySelector('div[role="dialog"] article video');
   }
 
-  function getVH(value, fallback) {
-    return value ? parseFloat(value) : fallback;
-  }
-
   function setImportant(el, prop, value) {
     el.style.setProperty(prop, value, "important");
+  }
+
+  function applyState(v) {
+    setImportant(v, "top", videoState.top + "vh");
+    setImportant(v, "height", videoState.height + "vh");
   }
 
   function addHoldAction(button, action) {
@@ -297,7 +306,7 @@ button:has(svg[aria-label="Go back"]):hover {
       interval = setInterval(action, 10);
     });
 
-    ["mouseup", "mouseleave"].forEach((evt) =>
+    ["mouseup", "mouseleave"].forEach(evt =>
       button.addEventListener(evt, () => clearInterval(interval))
     );
   }
@@ -308,36 +317,37 @@ button:has(svg[aria-label="Go back"]):hover {
   function increaseHeight() {
     const v = getVideo();
     if (!v) return;
-    setImportant(v, "height", getVH(v.style.height, 100) + 1 + "vh");
+    videoState.height += 1;
+    applyState(v);
   }
 
   function decreaseHeight() {
     const v = getVideo();
     if (!v) return;
-    setImportant(
-      v,
-      "height",
-      Math.max(1, getVH(v.style.height, 100) - 1) + "vh"
-    );
+    videoState.height = Math.max(1, videoState.height - 1);
+    applyState(v);
   }
 
   function moveUp() {
     const v = getVideo();
     if (!v) return;
-    setImportant(v, "top", getVH(v.style.top, 0) - 1 + "vh");
+    videoState.top -= 1;
+    applyState(v);
   }
 
   function moveDown() {
     const v = getVideo();
     if (!v) return;
-    setImportant(v, "top", getVH(v.style.top, 0) + 1 + "vh");
+    videoState.top += 1;
+    applyState(v);
   }
 
   function resetVideo() {
     const v = getVideo();
     if (!v) return;
-    setImportant(v, "top", "0vh");
-    setImportant(v, "height", "100vh");
+    videoState.top = 0;
+    videoState.height = 100;
+    applyState(v);
   }
 
   /* =======================
@@ -348,7 +358,7 @@ button:has(svg[aria-label="Go back"]):hover {
       'button:has(svg[aria-label="Next"])'
     );
 
-    nextButtons.forEach((nextBtn) => {
+    nextButtons.forEach(nextBtn => {
       if (nextBtn.nextElementSibling?.classList.contains("custom-zoom-btns")) {
         return;
       }
@@ -367,7 +377,7 @@ button:has(svg[aria-label="Go back"]):hover {
       const minusBtn = document.createElement("button");
       minusBtn.textContent = "-";
 
-      const downBtn = document.createElement("button");
+       const downBtn = document.createElement("button");
       downBtn.textContent = "↑";
 
       const upBtn = document.createElement("button");
@@ -390,34 +400,65 @@ button:has(svg[aria-label="Go back"]):hover {
 
   injectButtons();
 
-  const injectObserver = new MutationObserver(injectButtons);
-  injectObserver.observe(document.body, {
+  new MutationObserver(injectButtons).observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: true
   });
+
+  /* =======================
+     Persist State on New Video
+  ======================= */
+  new MutationObserver(() => {
+    const v = getVideo();
+    if (v) applyState(v);
+  }).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  /* =======================
+     Mouse Wheel Volume Control
+  ======================= */
+  document.addEventListener(
+    "wheel",
+    (e) => {
+      const v = getVideo();
+      if (!v) return;
+      if (!v.contains(e.target)) return;
+
+      e.preventDefault();
+
+      const step = 0.05;
+      let vol = v.volume;
+
+      vol += e.deltaY < 0 ? step : -step;
+      v.volume = Math.min(1, Math.max(0, vol));
+    },
+    { passive: false }
+  );
 
   /* =======================
      Add .outter class
   ======================= */
   function addOutterClass() {
-    const buttons = document.querySelectorAll(
-      'button:has(svg[aria-label="Next"]), button:has(svg[aria-label="Go back"])'
-    );
-
-    buttons.forEach((btn) => {
-      const parent = btn.parentElement;
-      if (parent) parent.classList.add("outter");
-    });
+    document
+      .querySelectorAll(
+        'button:has(svg[aria-label="Next"]), button:has(svg[aria-label="Go back"])'
+      )
+      .forEach(btn => {
+        const parent = btn.parentElement;
+        if (parent) parent.classList.add("outter");
+      });
   }
 
   addOutterClass();
 
-  const outterObserver = new MutationObserver(addOutterClass);
-  outterObserver.observe(document.body, {
+  new MutationObserver(addOutterClass).observe(document.body, {
     childList: true,
-    subtree: true,
+    subtree: true
   });
 })();
+
 </script>
 
 <!------------------------------------ INSTAGRAM CODE END  ------------------------------------>
