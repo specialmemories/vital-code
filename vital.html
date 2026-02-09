@@ -189,87 +189,234 @@
 
 <!------------------------------------ INSTAGRAM CDODE   ------------------------------------>
 
-<style>
-  html[lang] {
+(function () {
+  /* =======================
+     Inject CSS
+  ======================= */
+  const css = `
+html[lang] {
   overflow: auto !important;
 }
 
-/* Hide second child div inside .html-div within article */
 article > .html-div > div:nth-child(2) {
   display: none;
 }
 
-/* Hide all dialogs by default */
 div[role="dialog"] {
   display: none !important;
 }
 
-/* Darken background for elements containing a dialog */
 div:has(div[role="dialog"]) {
   background: #000 !important;
 }
 
-/* Show dialogs that contain an article */
 div[role="dialog"]:has(article) {
   display: flex !important;
 }
 
-/* Style video inside dialog */
 div[role="dialog"] article video {
-    position: fixed;
-    top: -50vh !important;
-    top: 0vh !important;
-    left: 50%;
-    height: 200vh !important;
-    height: 100vh !important;
-    background: #000;
-    transform: translateX(-50%);
-    object-fit: cover;
-    object-fit: contain;
-} 
+  position: fixed;
+  top: 0vh !important;
+  left: 50%;
+  height: 100vh !important;
+  background: #000;
+  transform: translateX(-50%);
+  object-fit: contain;
+}
 
-/* Remove all box shadows inside dialog */
 div[role="dialog"] * {
   box-shadow: unset !important;
 }
 
-/* Hide tags and play buttons */
 button:has(svg[aria-label="Tags"]),
 div[role="dialog"] div[aria-label="Play"] {
   display: none;
 }
 
-/* Audio playing & close buttons (hidden by default) */
 button:has(svg[aria-label="Audio is playing"]),
 svg[aria-label="Close"] {
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-/* Show on hover */
 button:has(svg[aria-label="Audio is playing"]):hover,
 svg[aria-label="Close"]:hover {
   opacity: 1;
 }
 
-/* Navigation buttons */
 button:has(svg[aria-label="Next"]),
 button:has(svg[aria-label="Go back"]) {
   background: #000;
   transition: background 0.3s;
 }
 
-/* Navigation icons */
 svg[aria-label="Next"],
 svg[aria-label="Go back"] {
   color: #000;
 }
 
-/* Invert colors on hover */
 button:has(svg[aria-label="Next"]):hover,
 button:has(svg[aria-label="Go back"]):hover {
   background: #fff;
 }
 
-</style>
+.outter {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.outter:hover {
+  opacity: 1;
+}
+`;
+
+  const style = document.createElement("style");
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  /* =======================
+     Helpers
+  ======================= */
+  function getVideo() {
+    return document.querySelector('div[role="dialog"] article video');
+  }
+
+  function getVH(value, fallback) {
+    return value ? parseFloat(value) : fallback;
+  }
+
+  function setImportant(el, prop, value) {
+    el.style.setProperty(prop, value, "important");
+  }
+
+  function addHoldAction(button, action) {
+    let interval;
+
+    button.addEventListener("mousedown", () => {
+      action();
+      interval = setInterval(action, 10);
+    });
+
+    ["mouseup", "mouseleave"].forEach((evt) =>
+      button.addEventListener(evt, () => clearInterval(interval))
+    );
+  }
+
+  /* =======================
+     Video Actions
+  ======================= */
+  function increaseHeight() {
+    const v = getVideo();
+    if (!v) return;
+    setImportant(v, "height", getVH(v.style.height, 100) + 1 + "vh");
+  }
+
+  function decreaseHeight() {
+    const v = getVideo();
+    if (!v) return;
+    setImportant(
+      v,
+      "height",
+      Math.max(1, getVH(v.style.height, 100) - 1) + "vh"
+    );
+  }
+
+  function moveUp() {
+    const v = getVideo();
+    if (!v) return;
+    setImportant(v, "top", getVH(v.style.top, 0) - 1 + "vh");
+  }
+
+  function moveDown() {
+    const v = getVideo();
+    if (!v) return;
+    setImportant(v, "top", getVH(v.style.top, 0) + 1 + "vh");
+  }
+
+  function resetVideo() {
+    const v = getVideo();
+    if (!v) return;
+    setImportant(v, "top", "0vh");
+    setImportant(v, "height", "100vh");
+  }
+
+  /* =======================
+     Inject Buttons
+  ======================= */
+  function injectButtons() {
+    const nextButtons = document.querySelectorAll(
+      'button:has(svg[aria-label="Next"])'
+    );
+
+    nextButtons.forEach((nextBtn) => {
+      if (nextBtn.nextElementSibling?.classList.contains("custom-zoom-btns")) {
+        return;
+      }
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "custom-zoom-btns";
+      wrapper.style.display = "flex";
+      wrapper.style.flexDirection = "column";
+      wrapper.style.gap = "6px";
+      wrapper.style.fontSize = "8px";
+      wrapper.style.cursor = "pointer";
+
+      const plusBtn = document.createElement("button");
+      plusBtn.textContent = "+";
+
+      const minusBtn = document.createElement("button");
+      minusBtn.textContent = "-";
+
+      const downBtn = document.createElement("button");
+      downBtn.textContent = "↑";
+
+      const upBtn = document.createElement("button");
+      upBtn.textContent = "↓";
+
+      const resetBtn = document.createElement("button");
+      resetBtn.textContent = "↻";
+
+      wrapper.append(plusBtn, minusBtn, downBtn, upBtn, resetBtn);
+      nextBtn.insertAdjacentElement("afterend", wrapper);
+
+      addHoldAction(plusBtn, increaseHeight);
+      addHoldAction(minusBtn, decreaseHeight);
+      addHoldAction(downBtn, moveDown);
+      addHoldAction(upBtn, moveUp);
+
+      resetBtn.addEventListener("click", resetVideo);
+    });
+  }
+
+  injectButtons();
+
+  const injectObserver = new MutationObserver(injectButtons);
+  injectObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  /* =======================
+     Add .outter class
+  ======================= */
+  function addOutterClass() {
+    const buttons = document.querySelectorAll(
+      'button:has(svg[aria-label="Next"]), button:has(svg[aria-label="Go back"])'
+    );
+
+    buttons.forEach((btn) => {
+      const parent = btn.parentElement;
+      if (parent) parent.classList.add("outter");
+    });
+  }
+
+  addOutterClass();
+
+  const outterObserver = new MutationObserver(addOutterClass);
+  outterObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+})();
+
 <!------------------------------------ INSTAGRAM CODE END  ------------------------------------>
