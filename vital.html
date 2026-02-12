@@ -261,13 +261,14 @@ button:has(svg[aria-label="Go back"]):hover {
 }
 
 .outter {
-  opacity: 0;
+  opacity: 0!important;
   transition: opacity 0.3s;
 }
 
 .outter:hover {
-  opacity: 1;
+  opacity: 1!important;
 }
+
 div[role="dialog"] img {
   z-index: 999;
 }
@@ -409,15 +410,32 @@ div[role="dialog"] img {
   });
 
   /* =======================
-     Persist State on New Video
+     Remove srcset from dialog images
+  ======================= */
+  function removeSrcsetFromDialogImages() {
+    const images = document.querySelectorAll('div[role="dialog"] img');
+    images.forEach(img => {
+      if (img.hasAttribute("srcset")) {
+        img.removeAttribute("srcset");
+      }
+    });
+  }
+
+  /* =======================
+     Persist State on New Video + Keep srcset removed
   ======================= */
   new MutationObserver(() => {
     const v = getVideo();
     if (v) applyState(v);
+
+    removeSrcsetFromDialogImages();
   }).observe(document.body, {
     childList: true,
     subtree: true
   });
+
+  // Run once initially
+  removeSrcsetFromDialogImages();
 
   /* =======================
      Mouse Wheel Volume Control
@@ -460,7 +478,9 @@ div[role="dialog"] img {
     childList: true,
     subtree: true
   });
+
 })();
+
 </script>
 
 <!------------------------------------ INSTAGRAM CODE END  ------------------------------------>
