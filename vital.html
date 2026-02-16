@@ -1,83 +1,88 @@
 <!------------------------------------ YOUTUBE CDODE  ------------------------------------>
 <script>
   (function () {
-    const CONFIG = {
-        scaleStep: 0.1,
-        translateStep: 1,
-        minScale: 1,
-        maxScale: 4
-    };
+  const CONFIG = {
+    scaleStep: 0.1,
+    translateStep: 1,
+    minScale: 1,
+    maxScale: 4,
+  };
 
-    const INITIAL_STATE = {
-        scale: 1.5,
-        x: 0,
-        y: 0
-    };
+  const INITIAL_STATE = {
+    scale: 1.5,
+    x: 0,
+    y: 0,
+  };
 
-    const state = {
-        scale: INITIAL_STATE.scale,
-        x: INITIAL_STATE.x,
-        y: INITIAL_STATE.y
-    };
+  const state = {
+    scale: INITIAL_STATE.scale,
+    x: INITIAL_STATE.x,
+    y: INITIAL_STATE.y,
+  };
 
-    let zoomLabel;
+  let zoomLabel;
 
-    function injectCSS() {
-        if (document.getElementById("custom-no-scroll-css")) return;
+  function injectCSS() {
+    if (document.getElementById("custom-no-scroll-css")) return;
 
-        const style = document.createElement("style");
-        style.id = "custom-no-scroll-css";
-        style.textContent = `
+    const style = document.createElement("style");
+    style.id = "custom-no-scroll-css";
+    style.textContent = `
             .no-scroll button.branding-img-container.ytp-button,
-            .no-scroll .ytp-cards-teaser-text {
+            .no-scroll .ytp-cards-teaser-text,.ytp-ce-channel.ytp-ce-element-show,.ytp-ce-video.ytp-ce-large-round,
+             .ytp-ce-playlist.ytp-ce-large-round, .ytp-ce-large-round .ytp-ce-expanding-overlay-background {
                 display: none !important;
             }
+                .custom-video-transform-controls{
+                opacity:0;
+                transition:0.3s;
+                }
+                .ytp-chrome-controls:hover .custom-video-transform-controls{
+                opacity:1;
 
-            .ytp-spinner {
-                display: none !important;
-            }
+               }
+    
         `;
-        document.head.appendChild(style);
-    }
+    document.head.appendChild(style);
+  }
 
-    function getVideo() {
-        return document.querySelector(".no-scroll video");
-    }
+  function getVideo() {
+    return document.querySelector(".no-scroll video");
+  }
 
-    function applyTransform() {
-        const video = getVideo();
-        if (!video) return;
+  function applyTransform() {
+    const video = getVideo();
+    if (!video) return;
 
-        video.style.transform =
-            `scale(${state.scale}) translate(${state.x}%, ${state.y}%)`;
-    }
+    video.style.transform = `scale(${state.scale}) translate(${state.x}%, ${state.y}%)`;
+  }
 
-    function clamp(val, min, max) {
-        return Math.min(Math.max(val, min), max);
-    }
+  function clamp(val, min, max) {
+    return Math.min(Math.max(val, min), max);
+  }
 
-    function setPlaybackRate(rate) {
-        const video = getVideo();
-        if (!video) return;
-        video.playbackRate = rate;
-    }
+  function setPlaybackRate(rate) {
+    const video = getVideo();
+    if (!video) return;
+    video.playbackRate = rate;
+  }
 
-    function createButton(label, onClick) {
-        const btn = document.createElement("button");
-        btn.textContent = label;
-        btn.style.cssText = `
+  function createButton(label, onClick) {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.style.cssText = `
             font-size: 12px;
             padding: 2px 6px;
             margin-right: 4px;
             cursor: pointer;
         `;
-        btn.addEventListener("click", onClick);
-        return btn;
-    }
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
 
-    function createZoomLabel() {
-        const div = document.createElement("div");
-        div.style.cssText = `
+  function createZoomLabel() {
+    const div = document.createElement("div");
+    div.style.cssText = `
             font-size: 12px;
             padding: 2px 6px;
             margin-right: 4px;
@@ -85,99 +90,100 @@
             text-align: center;
             user-select: none;
         `;
-        div.textContent = state.scale.toFixed(1) + "×";
-        return div;
+    div.textContent = state.scale.toFixed(1) + "×";
+    return div;
+  }
+
+  function updateZoomLabel() {
+    if (zoomLabel) {
+      zoomLabel.textContent = state.scale.toFixed(1) + "×";
+    }
+  }
+
+  function resetTransform() {
+    state.scale = INITIAL_STATE.scale;
+    state.x = INITIAL_STATE.x;
+    state.y = INITIAL_STATE.y;
+
+    applyTransform();
+    updateZoomLabel();
+
+    // Reset playback speed
+    setPlaybackRate(0.5);
+  }
+
+  function injectControls() {
+    const controls = document.querySelector(
+      ".ytp-chrome-controls .ytp-left-controls",
+    );
+    if (!controls) return false;
+
+    if (controls.querySelector(".custom-video-transform-controls")) {
+      return true;
     }
 
-    function updateZoomLabel() {
-        if (zoomLabel) {
-            zoomLabel.textContent = state.scale.toFixed(1) + "×";
-        }
-    }
+    const container = document.createElement("div");
+    container.className = "custom-video-transform-controls";
+    container.style.display = "flex";
+    container.style.alignItems = "center";
 
-    function resetTransform() {
-        state.scale = INITIAL_STATE.scale;
-        state.x = INITIAL_STATE.x;
-        state.y = INITIAL_STATE.y;
-
+    container.append(
+      createButton("Zoom +", () => {
+        state.scale = clamp(
+          state.scale + CONFIG.scaleStep,
+          CONFIG.minScale,
+          CONFIG.maxScale,
+        );
         applyTransform();
         updateZoomLabel();
-
-        setPlaybackRate(0.5);
-    }
-
-    function injectControls() {
-        const controls = document.querySelector(
-            ".ytp-chrome-controls .ytp-left-controls"
+      }),
+      (zoomLabel = createZoomLabel()),
+      createButton("Zoom -", () => {
+        state.scale = clamp(
+          state.scale - CONFIG.scaleStep,
+          CONFIG.minScale,
+          CONFIG.maxScale,
         );
-        if (!controls) return false;
+        applyTransform();
+        updateZoomLabel();
+      }),
+      createButton("⇐", () => {
+        state.x += CONFIG.translateStep;
+        applyTransform();
+      }),
+      createButton("⇒", () => {
+        state.x -= CONFIG.translateStep;
+        applyTransform();
+      }),
+      createButton("⇑", () => {
+        state.y += CONFIG.translateStep;
+        applyTransform();
+      }),
+      createButton("⇓", () => {
+        state.y -= CONFIG.translateStep;
+        applyTransform();
+      }),
+      createButton("0.1×", () => {
+        setPlaybackRate(0.1);
+      }),
+      createButton("Reset", resetTransform),
+    );
 
-        if (controls.querySelector(".custom-video-transform-controls")) {
-            return true;
-        }
+    controls.appendChild(container);
+    return true;
+  }
 
-        const container = document.createElement("div");
-        container.className = "custom-video-transform-controls ytp-autohide-fade-transition";
-        container.style.display = "flex";
-        container.style.alignItems = "center";
-
-        container.append(
-            createButton("Zoom +", () => {
-                state.scale = clamp(
-                    state.scale + CONFIG.scaleStep,
-                    CONFIG.minScale,
-                    CONFIG.maxScale
-                );
-                applyTransform();
-                updateZoomLabel();
-            }),
-            (zoomLabel = createZoomLabel()),
-            createButton("Zoom -", () => {
-                state.scale = clamp(
-                    state.scale - CONFIG.scaleStep,
-                    CONFIG.minScale,
-                    CONFIG.maxScale
-                );
-                applyTransform();
-                updateZoomLabel();
-            }),
-            createButton("⇐", () => {
-                state.x += CONFIG.translateStep;
-                applyTransform();
-            }),
-            createButton("⇒", () => {
-                state.x -= CONFIG.translateStep;
-                applyTransform();
-            }),
-            createButton("⇑", () => {
-                state.y += CONFIG.translateStep;
-                applyTransform();
-            }),
-            createButton("⇓", () => {
-                state.y -= CONFIG.translateStep;
-                applyTransform();
-            }),
-            createButton("0.1×", () => {
-                setPlaybackRate(0.1);
-            }),
-            createButton("Reset", resetTransform)
-        );
-
-        controls.appendChild(container);
-        return true;
+  const observer = new MutationObserver(() => {
+    injectCSS();
+    if (injectControls()) {
+      applyTransform();
     }
+  });
 
-    const observer = new MutationObserver(() => {
-        injectCSS();
-        if (injectControls()) {
-            applyTransform();
-        }
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 })();
 
 </script>
